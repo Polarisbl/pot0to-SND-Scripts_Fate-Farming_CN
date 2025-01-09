@@ -1,6 +1,10 @@
 # pot0to-SND-Scripts_Fate-Farming_CN
 用于国服的 Fate Farming SND 脚本，已经过验证
 
+原始地址：https://github.com/pot0to/pot0to-SND-Scripts/blob/74e3fbd9a268c6716c5930f64b22c66945b39d2e/Fate%20Farming/Fate%20Farming.lua
+
+已针对国服进行汉化（核心功能完全可用，6.0 / 7.0 地图完全支持，可选功能未验证，2.0 - 5.0 地图不可用）
+
 ## 使用方法：
 
 1. 打开 [Fate Farming.lua](/Fate_Farming.lua)：
