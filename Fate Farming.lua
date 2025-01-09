@@ -1735,7 +1735,7 @@ function AutoBuyGysahlGreens()
     else
         if not IsInZone(129) then
             yield("/vnav stop")
-            TeleportTo("Limsa Lominsa Lower Decks")
+            TeleportTo("利姆萨·罗敏萨下层甲板")
             return
         else
             local gysahlGreensVendor = { x=-62.1, y=18.0, z=9.4, npcName="班戈·赞戈" }
@@ -2349,7 +2349,7 @@ function ProcessRetainers()
 
         if not IsInZone(129) then
             yield("/vnav stop")
-            TeleportTo("Limsa Lominsa Lower Decks")
+            TeleportTo("利姆萨·罗敏萨下层甲板")
             return
         end
 
@@ -2465,7 +2465,7 @@ function Repair()
                 if Echo == "All" then
                     yield("/echo Out of Dark Matter! Purchasing more from Limsa Lominsa.")
                 end
-                TeleportTo("Limsa Lominsa Lower Decks")
+                TeleportTo("利姆萨·罗敏萨下层甲板")
                 return
             end
 
@@ -2499,7 +2499,7 @@ function Repair()
     else
         if NeedsRepair(RepairAmount) then
             if not IsInZone(129) then
-                TeleportTo("Limsa Lominsa Lower Decks")
+                TeleportTo("利姆萨·罗敏萨下层甲板")
                 return
             end
             
