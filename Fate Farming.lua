@@ -247,7 +247,7 @@ ClassList =
 BicolorExchangeData =
 {
     {
-        shopKeepName = "加德弗里德",
+        shopKeepName = "广域交易商 加德弗里德",
         zoneName = "旧萨雷安",
         zoneId = 962,
         aetheryteName = "旧萨雷安",
@@ -258,7 +258,7 @@ BicolorExchangeData =
         }
     },
     {
-        shopKeepName = "贝瑞尔",
+        shopKeepName = "广域交易商 贝瑞尔",
         zoneName = "九号解决方案",
         zoneId = 1186,
         aetheryteName = "九号解决方案",
