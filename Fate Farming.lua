@@ -85,18 +85,19 @@ MinTimeLeftToIgnoreFate             = 3*60          --如果 fate 的剩余时�
 CompletionToJoinBossFate            = 0             --如果 boss 型 fate 的进度不大于这个百分比，就跳过它（用以避免单挑 boss）
     CompletionToJoinSpecialBossFates = 20           --如果 boss 型特殊 fate 的进度不大于这个百分比，就跳过它（例如“蛇王得酷热涅：荒野的死斗”、“亩鼠米卡：盛装巡游皆大欢喜”）
     ClassForBossFates               = ""            --如果你想让脚本在打 boss 型 fate 时切换另一个职业，请将此值设置为职业的三字母缩写
-                                                        --例如：PLD 指代骑士，具体详见下方 CassList 参数
+                                                    --例如：PLD 指代骑士，具体详见下方 CassList 参数
 JoinCollectionsFates                = true          --设为 false 则跳过收集型 fate，
 
 MeleeDist                           = 2.5           --近战职业攻击距离（用于自动走位插件），建议设为 2.5，若不小于 2.59 将会导致近战职业“无法发动自动攻击，目标在范围之外。”
 RangedDist                          = 8            --远程职业攻击距离（用于自动走位插件），建议不大于 25.49
 
 RotationPlugin                      = "None"         --自动输出插件（None 代表不由脚本控制的自动输出插件，比如 AE 等）: RSR/BMR/VBM/Wrath/None
+    -- 仅 Rotation Solver Reborn (RSR)
     RSRAoeType                      = "Full"        --可选项: Cleave/Full/Off
 
-    -- 仅 BMR/VBM
-    RotationSingleTargetPreset      = ""            -- AOE 模式的预设的名称
-    RotationAoePreset               = ""            --仅 BMR/VBM：单体输出模式的预设的名称（用于迷失者、迷失少女）
+    -- 仅 Boss Mod (VBM) / Boss Mod Reborn (BMR)
+    RotationSingleTargetPreset      = ""            -- 仅 BMR/VBM：单体输出模式的预设的名称（用于迷失者、迷失少女）
+    RotationAoePreset               = ""            -- AOE 模式的预设的名称
 DodgingPlugin                       = "BMR"         --自动走位插件: BMR/VBM/None. 如果你使用 BMR/VBM 作为自动输出插件，该值将被忽略
 
 IgnoreForlorns                      = false         -- 设为 true 将不打迷失者、迷失少女
