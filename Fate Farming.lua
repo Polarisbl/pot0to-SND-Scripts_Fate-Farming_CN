@@ -2,13 +2,17 @@
 
 ********************************************************************************
 *                                Fate Farming                                  *
-*                               Version 2.21.1                                 *
+*                               Version 2.21.4                                 *
 ********************************************************************************
 
 Created by: pot0to (https://ko-fi.com/pot0to)
 State Machine Diagram: https://github.com/pot0to/pot0to-SND-Scripts/blob/main/FateFarmingStateMachine.drawio.png
         
-    -> 2.21.1   Adjusted coordinates for Old Sharlayan bicolor gemstone vendor
+    -> 2.21.4   Fix for change instances companion script
+                Adjusted landing logic so hopefully it shouldn't get stuck too
+                    high up anymore
+                Added ability to only do bonus fates
+                Adjusted coordinates for Old Sharlayan bicolor gemstone vendor
                 Support for multi-zone farming
                 Added some thanalan npc fates
                 Cleanup for Yak'tel fates and landing condition when flying back
@@ -24,8 +28,8 @@ State Machine Diagram: https://github.com/pot0to/pot0to-SND-Scripts/blob/main/Fa
                     - added check to prevent vnav from interrupting casters
                     - turned off vnav pathing for boss fates while in combat
 
-原始地址：https://github.com/pot0to/pot0to-SND-Scripts/blob/74e3fbd9a268c6716c5930f64b22c66945b39d2e/Fate%20Farming/Fate%20Farming.lua
-已针对国服进行汉化（核心功能完全可用，6.0 / 7.0 地图完全支持，可选功能未验证，2.0 - 5.0 地图不可用）
+原始地址：https://github.com/pot0to/pot0to-SND-Scripts/blob/057839bcde4fc53e4a35ea527bf53d27d7f456e1/Fate%20Farming/Fate%20Farming.lua#L101
+已针对国服进行汉化（核心功能完全可用，6.0 / 7.0 地图完全支持，2.0 - 5.0 地图基本可用，可选功能未验证）
 
 ********************************************************************************
 *                              需要的 dalamud 插件                              *
@@ -70,35 +74,37 @@ State Machine Diagram: https://github.com/pot0to/pot0to-SND-Scripts/blob/main/Fa
 ]]
 
 --打 fate 前的设置
-Food                                = ""            --如果您不想使用任何食物，请将 "" 留空。如果是 HQ，则在名称后添加 <hq>，如 "烧烤暗色茄子 <hq>"
-Potion                              = ""            --如果您不想使用任何药水，请将 "" 留空。
-ShouldSummonChocobo                 = true          --设置为 true 将会自动召唤陆行鸟
-    ResummonChocoboTimeLeft         = 3 * 60        --如果计时器剩余的时间少于这个数值（单位：秒），则重新召唤陆行鸟，这样它就不会在命运中途消失。
-    ChocoboStance                   = "治疗战术"      --选择一项填入: 跟随/自由战术/防护战术/进攻战术/治疗战术
-    ShouldAutoBuyGysahlGreens       = false          --如果背包里没有基萨尔野菜，会自动去海都商人那里购买 99 个
-MountToUse                          = "天阳马阿斯特洛珀"       --填入坐骑，脚本会使用该坐骑来飞往fate，需要完整、准确的名称
-                                                             --如果值为 "随机坐骑"，则会使用游戏内的随机坐骑功能
+Food                                = ""            -- 如果您不想使用任何食物，请将 "" 留空。如果是 HQ，则在名称后添加 <hq>，如 "烧烤暗色茄子 <hq>"
+Potion                              = ""            -- 如果您不想使用任何药水，请将 "" 留空。
+ShouldSummonChocobo                 = true          -- 设置为 true 将会自动召唤陆行鸟
+    ResummonChocoboTimeLeft         = 3 * 60        -- 如果计时器剩余的时间少于这个数值（单位：秒），则重新召唤陆行鸟，这样它就不会在命运中途消失。
+    ChocoboStance                   = "治疗战术"     --选择一项填入: 跟随/自由战术/防护战术/进攻战术/治疗战术
+    ShouldAutoBuyGysahlGreens       = false         -- 如果背包里没有基萨尔野菜，会自动去海都商人那里购买 99 个
+MountToUse                          = "天阳马阿斯特洛珀"       -- 填入坐骑，脚本会使用该坐骑来飞往fate，需要完整、准确的名称
+                                                                 -- 如果值为 "随机坐骑"，则会使用游戏内的随机坐骑功能
 
 --Fate 战斗设置
-CompletionToIgnoreFate              = 80            --如果 fate 的进度不小于这个百分比，就跳过它
-MinTimeLeftToIgnoreFate             = 3*60          --如果 fate 的剩余时间不小于这个数值（单位：秒），就跳过它
-CompletionToJoinBossFate            = 0             --如果 boss 型 fate 的进度不大于这个百分比，就跳过它（用以避免单挑 boss）
-    CompletionToJoinSpecialBossFates = 20           --如果 boss 型特殊 fate 的进度不大于这个百分比，就跳过它（例如“蛇王得酷热涅：荒野的死斗”、“亩鼠米卡：盛装巡游皆大欢喜”）
-    ClassForBossFates               = ""            --如果你想让脚本在打 boss 型 fate 时切换另一个职业，请将此值设置为职业的三字母缩写
-                                                    --例如：PLD 指代骑士，具体详见下方 CassList 参数
-JoinCollectionsFates                = true          --设为 false 则跳过收集型 fate，
-
-MeleeDist                           = 2.5           --近战职业攻击距离（用于自动走位插件），建议设为 2.5，若不小于 2.59 将会导致近战职业“无法发动自动攻击，目标在范围之外。”
-RangedDist                          = 8            --远程职业攻击距离（用于自动走位插件），建议不大于 25.49
-
-RotationPlugin                      = "None"         --自动输出插件（None 代表不由脚本控制的自动输出插件，比如 AE 等）: RSR/BMR/VBM/Wrath/None
+CompletionToIgnoreFate              = 80            -- 如果 fate 的进度不小于这个百分比，就跳过它
+MinTimeLeftToIgnoreFate             = 3*60          -- 如果 fate 的剩余时间不小于这个数值（单位：秒），就跳过它
+CompletionToJoinBossFate            = 0             -- 如果 boss 型 fate 的进度不大于这个百分比，就跳过它（用以避免单挑 boss）
+    CompletionToJoinSpecialBossFates = 20           -- 如果 boss 型特殊 fate 的进度不大于这个百分比，就跳过它（例如“蛇王得酷热涅：荒野的死斗”、“亩鼠米卡：盛装巡游皆大欢喜”）
+    ClassForBossFates               = ""            -- 如果你想让脚本在打 boss 型 fate 时切换另一个职业，请将此值设置为职业的三字母缩写
+                                                    -- 例如：PLD 指代骑士，具体详见下方 CassList 参数
+JoinCollectionsFates                = true          -- 设为 false 则跳过收集型 fate，
+BonusFatesOnly                      = false         -- 设为 true 将只参加有额外奖励的 fate
+MeleeDist                           = 2.5           -- 近战职业攻击距离（用于自动走位插件），建议设为 2.5，若不小于 2.59 将会导致近战职业“无法发动自动攻击，目标在范围之外。”
+RangedDist                          = 8             -- 远程职业攻击距离（用于自动走位插件），建议不大于 25.49
+                                                       -- 特别地，如果你的职业有【以自身为圆心的圆形 aoe】（如诗人等），建议不大于【你的这类技能的攻击距离】
+RotationPlugin                      = "None"        -- 自动输出插件（None 代表不由脚本控制的自动输出插件，比如 AE 等）: RSR/BMR/VBM/Wrath/None
     -- 仅 Rotation Solver Reborn (RSR)
-    RSRAoeType                      = "Full"        --可选项: Cleave/Full/Off
+    RSRAoeType                      = "Full"        -- 可选项: Cleave/Full/Off
 
     -- 仅 Boss Mod (VBM) / Boss Mod Reborn (BMR)
-    RotationSingleTargetPreset      = ""            -- 仅 BMR/VBM：单体输出模式的预设的名称（用于迷失者、迷失少女）
+    RotationSingleTargetPreset      = ""            -- 单体输出模式的预设的名称（用于迷失者、迷失少女）
     RotationAoePreset               = ""            -- AOE 模式的预设的名称
-DodgingPlugin                       = "BMR"         --自动走位插件: BMR/VBM/None. 如果你使用 BMR/VBM 作为自动输出插件，该值将被忽略
+    RotationHoldBuffPreset          = ""            -- 留爆发模式的预设的名称
+    PorcentageToHoldBuff            = 65            -- 当 fate 的进度不小于此百分比数值时，切换为留爆发模式，有助于减少爆发技能的浪费。如果打得太快，该值不小于 70% 时仍然有可能导致爆发溢出
+DodgingPlugin                       = "BMR"         -- 自动走位插件: BMR/VBM/None. 如果你使用 BMR/VBM 作为自动输出插件，该值将被忽略
 
 IgnoreForlorns                      = false         -- 设为 true 将不打迷失者、迷失少女
     IgnoreBigForlornOnly            = false         -- 设为 true 将不打迷失者
@@ -106,22 +112,22 @@ IgnoreForlorns                      = false         -- 设为 true 将不打迷�
 --打完 fate
 WaitUpTo                            = 10            -- 出发前往下一个 fate 前等待时间的最大值（单位：秒）
                                                         -- 实际值为 3 秒和该值之间的随机秒数
-EnableChangeInstance                = true          --设为 true 如果当前分线没有 fate，则切换分线（仅在有分线的地图可用）
-    WaitIfBonusBuff                 = true          --设为 true 将在拥有“危命奖励提高” buff 时不换线
-    NumberOfInstances               = 3             --最大分线数
-ShouldExchangeBicolorGemstones      = false          --设为 true 则在双色宝石即将溢出时兑换双色宝石的收据
+EnableChangeInstance                = true          -- 设为 true 如果当前分线没有 fate，则切换分线（仅在有分线的地图可用）
+    WaitIfBonusBuff                 = true          -- 设为 true 将在拥有“危命奖励提高” buff 时不换线
+    NumberOfInstances               = 3             -- 最大分线数
+ShouldExchangeBicolorGemstones      = false         -- 设为 true 则在双色宝石即将溢出时兑换双色宝石的收据
     ItemToPurchase                  = "图拉尔双色宝石的收据"        -- 可选项：双色宝石的收据/图拉尔双色宝石的收据
-SelfRepair                          = true         --设为 true 将在装备即将损坏时自己修复，否则将会回到海都找维修工修复
-    RepairAmount                    = 20            --当装备耐久度平均值低于此值时开始修复
-    ShouldAutoBuyDarkMatter         = false          --当8级暗物质不足时自动去海都商人那里购买 99 个
-ShouldExtractMateria                = false          --是否在装备精炼度满时自动精制魔晶石
-Retainers                           = false          --是否自动收雇员
-ShouldGrandCompanyTurnIn            = false         --是否自动交军票 (需要 Deliveroo)
-    InventorySlotsLeft              = 5             --当背包剩余空间小于此值时开始交军票
+SelfRepair                          = true          -- 设为 true 将在装备即将损坏时自己修复，否则将会回到海都找维修工修复
+    RepairAmount                    = 20            -- 当装备耐久度平均值低于此值时开始修复
+    ShouldAutoBuyDarkMatter         = false         -- 当8级暗物质不足时自动去海都商人那里购买 99 个
+ShouldExtractMateria                = false         -- 是否在装备精炼度满时自动精制魔晶石
+Retainers                           = false         -- 是否自动收雇员
+ShouldGrandCompanyTurnIn            = false         -- 是否自动交军票 (需要 Deliveroo)
+    InventorySlotsLeft              = 5             -- 当背包剩余空间小于此值时开始交军票
 
-Echo                                = "All"         --可选项: All/Gems/None （All：脚本会提示所有信息，Gems：脚本只会提示与双色宝石有关的信息，None：脚本不提示信息）
+Echo                                = "All"         -- 可选项: All/Gems/None （All：脚本会提示所有信息，Gems：脚本只会提示与双色宝石有关的信息，None：脚本不提示信息）
 
-CompanionScriptMode                 = false         --仅在其他脚本要求时才设为 true
+CompanionScriptMode                 = false         -- 仅在其他脚本要求时才设为 true
 
 --#endregion Settings
 
@@ -221,27 +227,36 @@ CharacterCondition = {
 
 ClassList =
 {
-    pld = { classId=19, className="骑士",         isMelee=true,  isTank=true },
-    mnk = { classId=20, className="武僧",         isMelee=true,  isTank=false },
-    war = { classId=21, className="战士",           isMelee=true,  isTank=true },
-    drg = { classId=22, className="龙骑士",         isMelee=true,  isTank=false },
-    brd = { classId=23, className="吟游诗人",       isMelee=false, isTank=false },
-    whm = { classId=24, className="白魔法师",       isMelee=false, isTank=false },
-    blm = { classId=25, className="黑魔法师",       isMelee=false, isTank=false },
-    smn = { classId=27, className="召唤师",         isMelee=false, isTank=false },
-    sch = { classId=28, className="学者",           isMelee=false, isTank=false },
-    nin = { classId=30, className="忍者",           isMelee=true,  isTank=false },
-    mch = { classId=31, className="机工士",         isMelee=false, isTank=false},
-    drk = { classId=32, className="暗黑骑士",       isMelee=true,  isTank=true },
-    ast = { classId=33, className="占星术士",       isMelee=false, isTank=false },
-    sam = { classId=34, className="武士",             isMelee=true,  isTank=false },
-    rdm = { classId=35, className="赤魔法师",       isMelee=false, isTank=false },
-    blu = { classId=36, className="青魔法师",       isMelee=false, isTank=false },
-    gnb = { classId=37, className="绝枪战士", isMelee=true,  isTank=true },
-    dnc = { classId=38, className="舞者",         isMelee=false, isTank=false },
-    rpr = { classId=39, className="钐镰客",       isMelee=true,  isTank=false },
-    sge = { classId=40, className="贤者",           isMelee=false, isTank=false },
-    vpr = { classId=41, className="蝰蛇剑士",     isMelee=true,  isTank=false },
+    gla = { classId=1,  className="剑术师",   isMelee=true,  isTank=true  },
+    pgl = { classId=2,  className="格斗家",   isMelee=true,  isTank=false },
+    mrd = { classId=3,  className="斧术师",   isMelee=true,  isTank=true  },
+    lnc = { classId=4,  className="枪术师",   isMelee=true,  isTank=false },
+    arc = { classId=5,  className="弓箭手",   isMelee=false, isTank=false },
+    cnj = { classId=6,  className="幻术师",   isMelee=false, isTank=false },
+    thm = { classId=7,  className="咒术师",   isMelee=false, isTank=false },
+    pld = { classId=19, className="骑士",     isMelee=true,  isTank=true  },
+    mnk = { classId=20, className="武僧",     isMelee=true,  isTank=false },
+    war = { classId=21, className="战士",     isMelee=true,  isTank=true  },
+    drg = { classId=22, className="龙骑士",   isMelee=true,  isTank=false },
+    brd = { classId=23, className="吟游诗人", isMelee=false, isTank=false },
+    whm = { classId=24, className="白魔法师", isMelee=false, isTank=false },
+    blm = { classId=25, className="黑魔法师", isMelee=false, isTank=false },
+    acn = { classId=26, className="秘术师",   isMelee=false, isTank=false },
+    smn = { classId=27, className="召唤师",   isMelee=false, isTank=false },
+    sch = { classId=28, className="学者",     isMelee=false, isTank=false },
+    rog = { classId=29, className="双剑师",   isMelee=false, isTank=false },
+    nin = { classId=30, className="忍者",     isMelee=true,  isTank=false },
+    mch = { classId=31, className="机工士",   isMelee=false, isTank=false },
+    drk = { classId=32, className="暗黑骑士", isMelee=true,  isTank=true  },
+    ast = { classId=33, className="占星术士", isMelee=false, isTank=false },
+    sam = { classId=34, className="武士",     isMelee=true,  isTank=false },
+    rdm = { classId=35, className="赤魔法师", isMelee=false, isTank=false },
+    blu = { classId=36, className="青魔法师", isMelee=false, isTank=false },
+    gnb = { classId=37, className="绝枪战士", isMelee=true,  isTank=true  },
+    dnc = { classId=38, className="舞者",     isMelee=false, isTank=false },
+    rpr = { classId=39, className="钐镰客",   isMelee=true,  isTank=false },
+    sge = { classId=40, className="贤者",     isMelee=false, isTank=false },
+    vpr = { classId=41, className="蝰蛇剑士", isMelee=true,  isTank=false },
     pct = { classId=42, className="绘灵法师", isMelee=false, isTank=false }
 }
 
@@ -699,94 +714,204 @@ FatesData = {
         }
     },
     {
-        zoneName = "Lakeland",
-        zoneId = 813,
+        zoneName = "基拉巴尼亚边区",
+        zoneId = 612,
         fatesList= {
             collectionsFates= {
-                { fateName="Pick-up Sticks", npcName="Crystarium Botanist" }
+                { fateName="集中训练营 士兵之章", npcName="弗雷拉克·巴尔本辛协漩校" },
+                { fateName="新石器时代", npcName="梅氏的少女" },
             },
             otherNpcFates= {
-                { fateName="Subtle Nightshade", npcName="Artless Dodger" },
-                { fateName="Economic Peril", npcName="Jobb Guard" }
+                { fateName="冥河世界", npcName="黑涡团传令员" },
+                { fateName="蚁狮没有攻击性", npcName="梅氏的猎人" },
+                { fateName="下个岩石继续", npcName="阿拉米格解放军战士" },
+                { fateName="边境巡视员", npcName="阿拉米格解放军战士" }
             },
-            fatesWithContinuations = {
-                "Behind Anemone Lines"
-            },
-            blacklistedFates= {}
-        }
-    },
-    {
-        zoneName = "Kholusia",
-        zoneId = 814,
-        fatesList= {
-            collectionsFates= {
-                { fateName="Ironbeard Builders - Rebuilt", npcName="Tholl Engineer" }
-            },
-            otherNpcFates= {},
             fatesWithContinuations = {},
             blacklistedFates= {}
         }
     },
     {
-        zoneName = "Amh Araeng",
+        zoneName = "基拉巴尼亚山区",
+        zoneId = 620,
+        fatesList= {
+            collectionsFates= {
+                { fateName="狮鹫物语", npcName="流浪的酒保商人" }
+            },
+            otherNpcFates= {
+                { fateName="勇敢的蚱蜢", npcName="受伤的战士" },
+                { fateName="生死关头", npcName="阿拉加纳的居民" },
+                { fateName="等好久了！", npcName="寒炉村居民" },
+                { fateName="血的收获", npcName="倔强的农夫" }
+            },
+            fatesWithContinuations = {},
+            blacklistedFates= {
+                "The Magitek Is Back", --escort
+                "A New Leaf" --escort
+            }
+        }
+    },
+    {
+        zoneName = "基拉巴尼亚湖区",
+        zoneId = 621,
+        fatesList= {
+            collectionsFates= {},
+            otherNpcFates= {},
+            fatesWithContinuations = {},
+            specialFates = {
+                "传说中的雷马——伊克西翁" --ixion
+            },
+            blacklistedFates= {}
+        }
+    },
+    {
+        zoneName = "红玉海",
+        zoneId = 613,
+        fatesList= {
+            collectionsFates= {
+                { fateName="Treasure Island", npcName="被打劫的碧甲族" },
+                { fateName="The Coral High Ground", npcName="稳重的海盗" }
+            },
+            otherNpcFates= {
+                { fateName="兵法修行者——一刀客千万", npcName="海贼众的少女" },
+                { fateName="红甲族恣意的风筝", npcName="负伤的海盗" },
+                { fateName="无礼的牛鬼——尘轮鬼", npcName="十分困扰的海盗" }
+            },
+            fatesWithContinuations = {},
+            blacklistedFates= {}
+        }
+    },
+    {
+        zoneName = "延夏",
+        zoneId = 614,
+        fatesList= {
+            collectionsFates= {
+                { fateName="稻生物怪录", npcName="束手无策的农妇" },
+                { fateName="银狐的心愿", npcName="银狐" }
+            },
+            otherNpcFates= {
+                { fateName="金狐的心愿", npcName="金狐" },
+                { fateName="倒霉的鱼群", npcName="大鱼丰收 鱼群" }
+            },
+            specialFates = {
+                "九尾妖狐——玉藻御前" --foxyyy
+            },
+            fatesWithContinuations = {},
+            blacklistedFates= {}
+        }
+    },
+    {
+        zoneName = "太阳神草原",
+        zoneId = 622,
+        fatesList= {
+            collectionsFates= {
+                { fateName="答塔克的旅程之挤羊奶", npcName="阿儿塔尼" }
+            },
+            otherNpcFates= {
+                { fateName="忏悔", npcName="奥罗尼部年轻人" },
+                { fateName="归家路上的放牛少女", npcName="奥儿昆德部牛倌" },
+                { fateName="转瞬的噩梦", npcName="模儿部羊倌" },
+                { fateName="沉默的制裁", npcName="凯苏提尔部商人" }
+            },
+            fatesWithContinuations = {},
+            blacklistedFates= {}
+        }
+    },
+    {
+        zoneName = "雷克兰德",
+        zoneId = 813,
+        fatesList= {
+            collectionsFates= {
+                { fateName="樵夫之歌", npcName="雷克兰德的樵夫" }
+            },
+            otherNpcFates= {
+                { fateName="与紫叶团的战斗之卑鄙陷阱", npcName="像是旅行商人的男子" },
+                { fateName="污秽之血", npcName="乔布要塞的卫兵" }
+            },
+            fatesWithContinuations = {
+                "高度进化"
+            },
+            blacklistedFates= {}
+        }
+    },
+    {
+        zoneName = "珂露西亚岛",
+        zoneId = 814,
+        fatesList= {
+            collectionsFates= {
+                { fateName="制作战士之自走人偶", npcName="图尔家族的技师" }
+            },
+            otherNpcFates= {},
+            fatesWithContinuations = {},
+            specialFates = {
+                "激斗畏惧装甲之秘密武器" -- 畏惧装甲（特殊FATE）
+            },
+            blacklistedFates= {}
+        }
+    },
+    {
+        zoneName = "安穆·艾兰",
         zoneId = 815,
         fatesList= {
             collectionsFates= {},
             otherNpcFates= {},
             fatesWithContinuations = {},
             blacklistedFates= {
-                "Tolba No. 1", -- pathing is really bad to enemies
+                "托尔巴龟最棒", -- pathing is really bad to enemies
             }
         }
     },
     {
-        zoneName = "Il Mheg",
+        zoneName = "伊尔美格",
         zoneId = 816,
         fatesList= {
             collectionsFates= {
-                { fateName="Twice Upon a Time", npcName="Nectar-seeking Pixie" }
+                { fateName="仙子尾巴之魔物包围网", npcName="寻找花蜜的仙子" }
             },
             otherNpcFates= {
-                { fateName="Once Upon a Time", npcName="Nectar-seeking Pixie" },
+                { fateName="仙子尾巴之金黄花蜜", npcName="寻找花蜜的仙子" },
             },
             fatesWithContinuations = {},
             blacklistedFates= {}
         }
     },
     {
-        zoneName = "The Rak'tika Greatwood",
+        zoneName = "拉凯提卡大森林",
         zoneId = 817,
         fatesList= {
             collectionsFates= {
-                { fateName="Picking up the Pieces", npcName="Night's Blessed Missionary" },
-                { fateName="Pluck of the Draw", npcName="Myalna Bowsing" },
-                { fateName="Monkeying Around", npcName="Fanow Warder" }
+                { fateName="粉红鹳", npcName="夜之民导师" },
+                { fateName="缅楠的巡逻之补充弓箭", npcName="散弓音 缅楠" },
+                { fateName="传说诞生", npcName="法诺的看守" }
             },
             otherNpcFates= {
-                { fateName="Queen of the Harpies", npcName="Fanow Huntress" },
-                { fateName="Shot Through the Hart", npcName="Qilmet Redspear" },
+                { fateName="死相陆鸟——刻莱诺", npcName="法诺的猎人" },
+                { fateName="吉梅与萨梅", npcName="血红枪 吉梅" },
             },
             fatesWithContinuations = {},
             blacklistedFates= {}
         }
     },
     {
-        zoneName = "The Tempest",
+        zoneName = "黑风海",
         zoneId = 818,
         fatesList= {
             collectionsFates= {
-                { fateName="Low Coral Fiber", npcName="Teushs Ooan" },
-                { fateName="Pearls Apart", npcName="Ondo Spearfisher" }
+                { fateName="灾厄的古塔尼亚之收集红血珊瑚", npcName="提乌嘶·澳恩" },
+                { fateName="珍珠永恒", npcName="鳍人族捕鱼人" }
             },
             otherNpcFates= {
-                { fateName="Where has the Dagon", npcName="Teushs Ooan" },
-                { fateName="Ondo of Blood", npcName="Teushs Ooan" },
-                { fateName="Lookin' Back on the Track", npcName="Teushs Ooan" },
+                { fateName="灾厄的古塔尼亚之开始追踪", npcName="提乌嘶·澳恩" },
+                { fateName="灾厄的古塔尼亚之兹姆嘶登场", npcName="提乌嘶·澳恩" },
+                { fateName="灾厄的古塔尼亚之保护提乌嘶", npcName="提乌嘶·澳恩" },
             },
             fatesWithContinuations = {},
+            specialFates = {
+                "灾厄的古塔尼亚之深海讨伐战" --archaeotania
+            },
             blacklistedFates= {
-                "Coral Support", -- escort fate
-                "The Seashells He Sells", -- escort fate
+                "灾厄的古塔尼亚之护卫提乌嘶", -- escort fate
+                "贝汁物语", -- escort fate
             }
         }
     },
@@ -1178,6 +1303,17 @@ end
     Given two fates, picks the better one based on priority progress -> is bonus -> time left -> distance
 ]]
 function SelectNextFateHelper(tempFate, nextFate)
+    if BonusFatesOnly then
+        if not tempFate.isBonusFate and nextFate ~= nil and nextFate.isBonusFate then
+            return nextFate
+        elseif tempFate.isBonusFate and (nextFate == nil or not nextFate.isBonusFate) then
+            return tempFate
+        elseif not tempFate.isBonusFate and (nextFate == nil or not nextFate.isBonusFate) then
+            return nil
+        end
+        -- if both are bonus fates, go through the regular fate selection process
+    end
+
     if tempFate.timeLeft < MinTimeLeftToIgnoreFate or tempFate.progress > CompletionToIgnoreFate then
         return nextFate
     else
@@ -1452,8 +1588,12 @@ end
 function ChangeInstance()
     if SuccessiveInstanceChanges >= NumberOfInstances then
         if CompanionScriptMode then
-            if not WaitingForFateRewards and not shouldWaitForBonusBuff then
+            local shouldWaitForBonusBuff = WaitIfBonusBuff and (HasStatusId(1288) or HasStatusId(1289))
+            if WaitingForFateRewards == 0 and not shouldWaitForBonusBuff then
                 StopScript = true
+            else
+                LogInfo("[自动Fate] 正在等待团辅或Fate结算")
+                yield("/wait 3")
             end
         else
             yield("/wait 10")
@@ -1763,10 +1903,7 @@ function MoveToFate()
         if HasTarget() then
             LogInfo("[FATE] Found FATE target, immediate rerouting")
             PathfindAndMoveTo(GetTargetRawXPos(), GetTargetRawYPos(), GetTargetRawZPos())
-            if IsInFate() then
-                State = CharacterState.middleOfFateDismount
-                LogInfo("[FATE] State Change: MiddleOfFateDismount")
-            elseif (CurrentFate.isOtherNpcFate or CurrentFate.isCollectionsFate) then
+            if (CurrentFate.isOtherNpcFate or CurrentFate.isCollectionsFate) then
                 State = CharacterState.interactWithNpc
                 LogInfo("[FATE] State Change: Interact with npc")
             -- if GetTargetName() == CurrentFate.npcName then
@@ -1775,7 +1912,8 @@ function MoveToFate()
             --     State = CharacterState.middleOfFateDismount
             --     LogInfo("[FATE] State Change: MiddleOfFateDismount")
             else
-                ClearTarget()
+                State = CharacterState.middleOfFateDismount
+                LogInfo("[FATE] 状态变化: MiddleOfFateDismount")
             end
             return
         else
@@ -1784,7 +1922,8 @@ function MoveToFate()
             else
                 TargetClosestFateEnemy()
             end
-            return
+            yield("/wait 0.5") -- 等待0.5秒以保证目标选中
+	            return
         end
     end
 
@@ -1832,7 +1971,11 @@ function MoveToFate()
         nearestLandX, nearestLandY, nearestLandZ = RandomAdjustCoordinates(CurrentFate.x, CurrentFate.y, CurrentFate.z, 10)
     end
 
-    PathfindAndMoveTo(nearestLandX, nearestLandY, nearestLandZ, HasFlightUnlocked(SelectedZone.zoneId) and SelectedZone.flying)
+    if GetDistanceToPoint(nearestLandX, nearestLandY, nearestLandZ) > 5 then
+        PathfindAndMoveTo(nearestLandX, nearestLandY, nearestLandZ, HasFlightUnlocked(SelectedZone.zoneId) and SelectedZone.flying)
+    else
+        State = CharacterState.middleOfFateDismount
+    end
 end
 
 function InteractWithFateNpc()
@@ -1975,7 +2118,7 @@ function SummonChocobo()
         if GetItemCount(4868) > 0 then
             yield("/item 基萨尔野菜")
             yield("/wait 3")
-            yield('/cac "'..ChocoboStance..'"')
+            yield('/cac "'..ChocoboStance..' stance"')
         elseif ShouldAutoBuyGysahlGreens then
             State = CharacterState.autoBuyGysahlGreens
             LogInfo("[FATE] State Change: AutoBuyGysahlGreens")
@@ -2079,6 +2222,16 @@ function TurnOffAoes()
             yield("/vbmai setpresetname "..RotationSingleTargetPreset)
         end
         AoesOn = false
+    end
+end
+
+function TurnOffRaidBuffs()
+    if AoesOn then
+        if RotationPlugin == "BMR" then
+            yield("/bmrai setpresetname "..RotationHoldBuffPreset)
+        elseif RotationPlugin == "VBM" then
+            yield("/vbmai setpresetname "..RotationHoldBuffPreset)
+        end
     end
 end
 
@@ -2375,6 +2528,11 @@ function DoFate()
             end
         end
     end
+        
+    --hold buff thingy
+    if GetFateProgress(CurrentFate.fateId) >= PorcentageToHoldBuff then 
+        TurnOffRaidBuffs()
+    end   
 end
 
 --#endregion
