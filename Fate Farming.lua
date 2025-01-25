@@ -80,7 +80,7 @@ ShouldSummonChocobo                 = true          -- 设置为 true 将会自�
     ResummonChocoboTimeLeft         = 3 * 60        -- 如果计时器剩余的时间少于这个数值（单位：秒），则重新召唤陆行鸟，这样它就不会在命运中途消失。
     ChocoboStance                   = "治疗战术"     --选择一项填入: 跟随/自由战术/防护战术/进攻战术/治疗战术
     ShouldAutoBuyGysahlGreens       = false         -- 如果背包里没有基萨尔野菜，会自动去海都商人那里购买 99 个
-MountToUse                          = "天阳马阿斯特洛珀"       -- 填入坐骑，脚本会使用该坐骑来飞往fate，需要完整、准确的名称
+MountToUse                          = "随机坐骑"       -- 填入坐骑，脚本会使用该坐骑来飞往fate，需要完整、准确的名称
                                                                  -- 如果值为 "随机坐骑"，则会使用游戏内的随机坐骑功能
 
 --Fate 战斗设置
